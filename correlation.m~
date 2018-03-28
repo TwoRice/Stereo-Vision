@@ -15,7 +15,7 @@ range_x = width - window_size + 1;
 range_y = height - window_size + 1;
 
 for ref_x = 1 : range_x
-    disp(['Processing Window [', num2str(ref_x), '/', num2str((width - window_size) + 1), ']'])
+    disp(['Processing Window [', num2str(ref_x), '/', num2str((width - window_size)), ']'])
     for ref_y = 1 : range_y
         ref_window_x = ref_x  : ref_x + window_size - 1;
         ref_window_y = ref_y  : ref_y + window_size - 1;
@@ -40,10 +40,6 @@ for ref_x = 1 : range_x
                 window_x = x : (x + window_size - 1);
                 window_y = y : (y + window_size - 1);
                 
-                if(window_x(end) > width || window_y(end) > height)
-                   break 
-                end
-                
                 current_window = right_img(window_x, window_y);
                 ssd = normalised_ssd(ref_window, current_window);
                 correspondance(j1, i1) = ssd;
@@ -63,12 +59,8 @@ for ref_x = 1 : range_x
         
         [c_height, c_width] = size(correspondance);
         ref_index = [(c_height - 2) * window_size, (c_width - 2) * window_size]; % CHANGE THIS
-        [~, min_index] = min(abs(correspondance(:)));
+        [~, min_index] = min(correspondance(:));
         min_index = (min_index * window_size);
         disparity(ref_y, ref_x) = norm(ref_index - min_index);
     end
 end
-
-disparity = disparity - min(disparity);
-disparity = disparity ./ max(disparity);
-imshow(disparity)
