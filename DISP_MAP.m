@@ -1,18 +1,14 @@
 % Load the stereo images.
-[left, right] = PREP_IMAGES('pentagon_left.bmp', 'pentagon_right.bmp');
-% left = imresize(left, 0.25);
-% right = imresize(right, 0.25);
+[left, right] = PREP_IMAGES('images/pentagon_left.bmp', 'images/pentagon_right.bmp');
 
 disparity_map = zeros(size(left));
 
 % Define the size of the blocks for block matching.
 window_padding_x = 15;
-window_padding_y = 10;
+window_padding_y = window_padding_x;
 % window_size = 2 * window_padding + 1 in both directions
-
 search_range = window_padding_x * 3;
 
-% Get the image dimensions.
 [height, width] = size(left);
 
 % For each column of pixels in the image
@@ -21,10 +17,16 @@ for x = 1 : width
     x_start = max(1, x - window_padding_x);
     x_end = min(width, x + window_padding_x);
     
-    disp(['Processing Column [', num2str(x), '/', num2str(width), ']'])
-    
+    if(mod(x, 5) == 0)
+        disp(['Processing Column [', num2str(x), '/', num2str(width), ']'])
+        imshow(disparity_map);
+    end
     % For each row of pixels in the column
     for y = 1 : height
+%         imshow(left);
+%         hold on;
+%         rectangle('Position', [x_start, y_start + w_above, x_end - x_start, y_end - (y_start + w_above)], 'LineWidth', 2, 'EdgeColor', 'g');
+%         hold off;
         
         % Set the bounds for the row
         y_start = max(1, y - window_padding_y);
@@ -35,31 +37,39 @@ for x = 1 : width
         w_above = max(-search_range, 1 - y_start);
         w_below = min(search_range, height - y_end);
         
-        % Select the block from the right image to use as the template.
         reference = right(x_start:x_end, y_start:y_end);
-
-        % Get the total number of blocks in this search.
-        total_blocks = w_below - w_above + 1;
         
-        % Create a vector to hold the block differences.
+        total_blocks = w_below - w_above + 1;
         similarities = zeros(total_blocks, 1);
         
         % Calculate the difference between the reference and each of the blocks.
         for i = w_above : w_below
             % Select the block from the left image at the distance 'i'.
             window = left(x_start:x_end, (y_start + i):(y_end + i));
-            
-            % Compute the similarity for this window
+            % Compute the similarity for this window, 
             index = i - w_above + 1;
-            similarities(index, 1) = SSD(reference, window);
-            
+            similarities(index, 1) = NORMALISED_SDD(reference, window);
         end
         [~, min_index] = min(similarities);
         
         
         % Change the index back to an offset
-        disparity = min_index + w_above - 1;
-        disparity_map(x, y) = disparity;
+        disparity = max(0, min_index + w_above - 1);
+        
+        if ((min_index == 1) || (min_index == total_blocks))
+			% Skip sub-pixel estimation and store the initial disparity value.
+			disparity_map(x, y) = disparity;
+		else
+			% Grab the SAD values at the closest matching block (C2) and it's 
+			% immediate neighbors (C1 and C3).
+			above = similarities(min_index - 1);
+			pixel = similarities(min_index);
+			below = similarities(min_index + 1);
+			
+			% Adjust the disparity by some fraction.
+			% We're estimating the subpixel location of the true best match.
+			disparity_map(x, y) = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
+        end
     end
 end
 
