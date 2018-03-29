@@ -1,0 +1,1 @@
+[dm_ll, sm_ll] = DISP_MAP('images/pentagon_left.bmp', 'images/pentagon_left.bmp');
