@@ -1,8 +1,6 @@
-function [disparity_map, sigmoid] = DISP_MAP(left, right, padding)
+function [disparity_map, sigmoid] = DISP_MAP(left, right, padding, search_size_factor, subpixel)
     % Load the stereo images.
     [left, right] = PREP_IMAGES(left, right);
-    % [left, right] = PREP_IMAGES('images/scene_l.bmp', 'images/scene_r.bmp');
-    % [left, right] = PREP_IMAGES('images/piano/im0.png', 'images/piano/im1.png');
     
     disparity_map = zeros(size(left));
     
@@ -10,7 +8,7 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding)
     window_padding_x = padding;
     window_padding_y = window_padding_x;
     % effective window_size = 2 * window_padding + 1 in both directions
-    search_range = window_padding_x * 2.5;
+    search_range = window_padding_x * search_size_factor;
     
     [height, width] = size(left);
     
@@ -20,17 +18,11 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding)
         x_start = max(1, x - window_padding_x);
         x_end = min(height, x + window_padding_x);
         
-        if(mod(x, 10) == 0)
-            disp(['Processing Column [', num2str(x), '/', num2str(height), ']'])
-            imshow(disparity_map);
-        end
+        disp(['Processing Column [', num2str(x), '/', num2str(height), ']'])
+        % imshow(disparity_map);
+
         % For each row of pixels in the column
-        for y = 1 : width
-            %         imshow(left);
-            %         hold on;
-            %         rectangle('Position', [x_start, y_start + w_above, x_end - x_start, y_end - (y_start + w_above)], 'LineWidth', 2, 'EdgeColor', 'g');
-            %         hold off;
-            
+        for y = 1 : width            
             % Set the bounds for the row
             y_start = max(1, y - window_padding_y);
             y_end = min(width, y + window_padding_y);
@@ -39,10 +31,7 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding)
             % accounts for the edges of the image
             w_above = max(-search_range, 1 - y_start);
             w_below = min(search_range, width - y_end);
-            
-            
-            %             disp([[x_start, x_end],[y_start, y_end],[w_above, w_below]])
-            
+                        
             reference = right(x_start:x_end, y_start:y_end);
             
             total_blocks = w_below - w_above + 1;
@@ -60,24 +49,19 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding)
             
             
             % Change the index back to an offset
-%             disparity = max(0, min_index + w_above - 1);
+            % disparity = max(0, min_index + w_above - 1);
             disparity = min_index + w_above - 1;
             
-            if ((min_index == 1) || (min_index == total_blocks))
-                disparity_map(x, y) = disparity;
-            else
+            if (subpixel == 1 && ((min_index ~= 1) && (min_index ~= total_blocks)))
                 above = similarities(min_index - 1);
                 pixel = similarities(min_index);
                 below = similarities(min_index + 1);
                 
-                disparity_map(x, y) = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
+                disparity = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
             end
+            disparity_map(x,y) = disparity;
         end
     end
     
-    %     ground_truth = imread('images/pentagon_dispmap.bmp');
-    %     ground_truth = im2double(ground_truth);
     sigmoid = arrayfun(@(x) 1./(1 + exp(-1.*(x))), disparity_map);
-    
-    %     imshow(sigmoid);
 end
