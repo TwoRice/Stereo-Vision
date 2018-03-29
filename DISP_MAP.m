@@ -1,5 +1,6 @@
 % Load the stereo images.
 [left, right] = PREP_IMAGES('images/pentagon_left.bmp', 'images/pentagon_right.bmp');
+% [left, right] = PREP_IMAGES('/home/thms/Stereo-Vision/images/piano/im0.png', '/home/thms/Stereo-Vision/images/piano/im1.png');
 
 disparity_map = zeros(size(left));
 
@@ -17,7 +18,7 @@ for x = 1 : width
     x_start = max(1, x - window_padding_x);
     x_end = min(width, x + window_padding_x);
     
-    if(mod(x, 5) == 0)
+    if(mod(x, 10) == 0)
         disp(['Processing Column [', num2str(x), '/', num2str(width), ']'])
         imshow(disparity_map);
     end
@@ -48,7 +49,7 @@ for x = 1 : width
             window = left(x_start:x_end, (y_start + i):(y_end + i));
             % Compute the similarity for this window, 
             index = i - w_above + 1;
-            similarities(index, 1) = NORMALISED_SDD(reference, window);
+            similarities(index, 1) = SSD(reference, window);
         end
         [~, min_index] = min(similarities);
         
@@ -56,21 +57,25 @@ for x = 1 : width
         % Change the index back to an offset
         disparity = max(0, min_index + w_above - 1);
         
-        if ((min_index == 1) || (min_index == total_blocks))
+%         if ((min_index == 1) || (min_index == total_blocks))
 			% Skip sub-pixel estimation and store the initial disparity value.
 			disparity_map(x, y) = disparity;
-		else
-			% Grab the SAD values at the closest matching block (C2) and it's 
-			% immediate neighbors (C1 and C3).
-			above = similarities(min_index - 1);
-			pixel = similarities(min_index);
-			below = similarities(min_index + 1);
-			
-			% Adjust the disparity by some fraction.
-			% We're estimating the subpixel location of the true best match.
-			disparity_map(x, y) = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
-        end
+% 		else
+% 			% Grab the SAD values at the closest matching block (C2) and it's 
+% 			% immediate neighbors (C1 and C3).
+% 			above = similarities(min_index - 1);
+% 			pixel = similarities(min_index);
+% 			below = similarities(min_index + 1);
+% 			
+% 			% Adjust the disparity by some fraction.
+% 			% We're estimating the subpixel location of the true best match.
+% 			disparity_map(x, y) = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
+%         end
     end
 end
 
-imshow(disparity_map);
+ground_truth = imread('images/pentagon_dispmap.bmp');
+ground_truth = im2double(ground_truth);
+sigmoid = arrayfun(@(x) 1./(1 + exp(-1.*(x))), disparity_map);
+
+imshow(sigmoid);
