@@ -9,9 +9,9 @@ function [left, right] = PREP_IMAGES(left_path, right_path)
     if (size(right, 3) ~= 1)
         right = rgb2gray(right);
     end
-    if(size(left, 1) > 350)
-        scale_factor = 350 / max(size(left));
-        left = imresize(left, scale_factor);
-        right = imresize(right, scale_factor);
-    end
+%     if(size(left, 1) > 350)
+%         scale_factor = 350 / max(size(left));
+%         left = imresize(left, scale_factor);
+%         right = imresize(right, scale_factor);
+%     end
 end
