@@ -3,11 +3,10 @@ left_img = imread('pentagon_left.bmp');
 right_img = imread('pentagon_right.bmp');
 % parameters
 window_size = 8;
-search_factor = [1, 4, 0, 0];
+search_window_size = [0, 0, 8, 32];
 show_search = 0;
 pause_time = 0.0001;
 
-search_window_size = search_factor * window_size;
 [width, height] = size(left_img);
 
 range_x = width - window_size + 1;
@@ -46,9 +45,9 @@ for ref_x = 1 : range_x
                 if show_search
                     imshow(right_img);
                     hold on;
-                    rectangle('Position', [start_pos_x, start_pos_y, (end_pos_x - start_pos_x + 1), (end_pos_y - start_pos_y + 1)], 'LineWidth', 2, 'EdgeColor', 'g');
-                    rectangle('Position', [ref_window_x(1), ref_window_y(1), window_size, window_size], 'LineWidth', 2, 'EdgeColor', 'r');
-                    rectangle('Position', [window_x(1) + start_pos_x - 1, window_y(1) + start_pos_y - 1, window_size, window_size], 'LineWidth', 2, 'EdgeColor', 'b');
+                    rectangle('Position', [start_pos_y, start_pos_x, (end_pos_y - start_pos_y + 1), (end_pos_x - start_pos_x + 1)], 'LineWidth', 2, 'EdgeColor', 'g');
+                    rectangle('Position', [ref_window_y(1), ref_window_x(1), window_size, window_size], 'LineWidth', 2, 'EdgeColor', 'r');
+                    rectangle('Position', [window_y(1) + start_pos_y - 1, window_x(1) + start_pos_x - 1, window_size, window_size], 'LineWidth', 2, 'EdgeColor', 'b');
                     pause(pause_time);
                 end
             end
