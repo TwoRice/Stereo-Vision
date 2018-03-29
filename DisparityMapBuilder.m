@@ -3,11 +3,11 @@ classdef DisparityMapBuilder
         reference;
         search;
         
-        window_size = 3;
-        search_window_factor = 2;
+        window_size = 7;
+        search_window_factor = 3;
     end
     
-    methods
+    methods disparity
         function obj = DisparityMapBuilder(reference, search)
             [obj.reference, obj.search] = obj.prep_images(reference, search);
         end
@@ -30,23 +30,32 @@ classdef DisparityMapBuilder
                     
                     % define the search window
                     search_window = obj.extract_search_window(obj.search, col, row);
-                    
+
                     correspondance = [];
                     % foreach pixel in the search window
                     for x = 1 : size(search_window, 1) - obj.window_size + 1
                         for y = 1 :size(search_window, 2) - obj.window_size + 1
                             % extract a window to be sampled
                             support_window = obj.extract_window(search_window, x, y);
+                            % calculate sum of the squares differences and store it
                             ssd = obj.normalised_ssd(ref_window, support_window);
-                            correspondance(x,y) = ssd;
+                            correspondance(x,y) = ssd; %#ok<AGROW>
                         end
                     end
-                    
-                    [c_height, c_width] = size(correspondance);
-                    ref_index = [(c_height - 2) * obj.window_size, (c_width - 2) * obj.window_size]; % CHANGE THIS
-                    [~, min_index] = min(correspondance(:));
-                    min_index = (min_index * obj.window_size);
-                    disparity_map(col, row) = norm(ref_index - min_index);
+
+%                     correspondance
+%                     min(correspondance(:))
+%                     [c_height, c_width] = size(correspondance);
+%                     ref_index = [(c_height - 2) * obj.window_size, (c_width - 2) * obj.window_size]; % CHANGE THIS
+%                     [~, min_index] = min(correspondance(:));
+%                     min_index
+%                     min_index = (min_index * obj.window_size);
+%                     
+%                     ref_index
+%                     min_index
+%                     
+%                     pause(100)
+                    disparity_map(col, row) = min(correspondance(:));
                 end
             end
             

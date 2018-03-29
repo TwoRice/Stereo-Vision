@@ -1,0 +1,66 @@
+% Load the stereo images.
+[left, right] = PREP_IMAGES('pentagon_left.bmp', 'pentagon_right.bmp');
+% left = imresize(left, 0.25);
+% right = imresize(right, 0.25);
+
+disparity_map = zeros(size(left));
+
+% Define the size of the blocks for block matching.
+window_padding_x = 15;
+window_padding_y = 10;
+% window_size = 2 * window_padding + 1 in both directions
+
+search_range = window_padding_x * 3;
+
+% Get the image dimensions.
+[height, width] = size(left);
+
+% For each column of pixels in the image
+for x = 1 : width
+    % Set the bounds for the column selection
+    x_start = max(1, x - window_padding_x);
+    x_end = min(width, x + window_padding_x);
+    
+    disp(['Processing Column [', num2str(x), '/', num2str(width), ']'])
+    
+    % For each row of pixels in the column
+    for y = 1 : height
+        
+        % Set the bounds for the row
+        y_start = max(1, y - window_padding_y);
+        y_end = min(height, y + window_padding_y);
+        
+        % number of pixels that can be searched in a respective direction
+        % accounts for the edges of the image
+        w_above = max(-search_range, 1 - y_start);
+        w_below = min(search_range, height - y_end);
+        
+        % Select the block from the right image to use as the template.
+        reference = right(x_start:x_end, y_start:y_end);
+
+        % Get the total number of blocks in this search.
+        total_blocks = w_below - w_above + 1;
+        
+        % Create a vector to hold the block differences.
+        similarities = zeros(total_blocks, 1);
+        
+        % Calculate the difference between the reference and each of the blocks.
+        for i = w_above : w_below
+            % Select the block from the left image at the distance 'i'.
+            window = left(x_start:x_end, (y_start + i):(y_end + i));
+            
+            % Compute the similarity for this window
+            index = i - w_above + 1;
+            similarities(index, 1) = SSD(reference, window);
+            
+        end
+        [~, min_index] = min(similarities);
+        
+        
+        % Change the index back to an offset
+        disparity = min_index + w_above - 1;
+        disparity_map(x, y) = disparity;
+    end
+end
+
+imshow(disparity_map);
