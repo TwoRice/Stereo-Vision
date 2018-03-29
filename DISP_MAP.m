@@ -1,6 +1,6 @@
 % Load the stereo images.
 [left, right] = PREP_IMAGES('images/pentagon_left.bmp', 'images/pentagon_right.bmp');
-% [left, right] = PREP_IMAGES('/home/thms/Stereo-Vision/images/piano/im0.png', '/home/thms/Stereo-Vision/images/piano/im1.png');
+% [left, right] = PREP_IMAGES('images/piano/im0.png', 'images/piano/im1.png');
 
 disparity_map = zeros(size(left));
 
