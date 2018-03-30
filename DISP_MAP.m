@@ -48,8 +48,8 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding, search_size_f
             
             
             % Change the index back to an offset
-            disparity = max(0, min_index + w_left - 1);
-%             disparity = min_index + w_left - 1;
+            %disparity = max(0, min_index + w_left - 1);
+            disparity = min_index + w_left - 1;
             
             if (subpixel == 1 && ((min_index ~= 1) && (min_index ~= w_size)))
                 before = similarities(min_index - 1);
@@ -67,5 +67,5 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding, search_size_f
     
 %      n = std(disparity_map(:));
     
-    sigmoid = arrayfun(@(x) 1./(1 + exp(-2.*(x))), disparity_map);
+    sigmoid = arrayfun(@(x) 1./(1 + exp(-0.5.*(x))), disparity_map);
 end
