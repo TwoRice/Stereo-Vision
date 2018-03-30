@@ -12,56 +12,60 @@ function [disparity_map, sigmoid] = DISP_MAP(left, right, padding, search_size_f
     
     [height, width] = size(left);
     
-    % For each column of pixels in the image
-    for x = 1 : height
+    % For each row of pixels in the image
+    for y = 1 : height
         % Set the bounds for the column selection
-        x_start = max(1, x - window_padding_x);
-        x_end = min(height, x + window_padding_x);
+        y_start = max(1, y - window_padding_y);
+        y_end = min(height, y + window_padding_y);
         
-        disp(['Processing Column [', num2str(x), '/', num2str(height), ']'])
-        % imshow(disparity_map);
+        disp(['Processing Row [', num2str(y), '/', num2str(height), ']'])
 
-        % For each row of pixels in the column
-        for y = 1 : width            
+        % For each column of pixels in the row
+        for x = 1 : width            
             % Set the bounds for the row
-            y_start = max(1, y - window_padding_y);
-            y_end = min(width, y + window_padding_y);
+            x_start = max(1, x - window_padding_x);
+            x_end = min(width, x + window_padding_x);
             
             % number of pixels that can be searched in a respective direction
             % accounts for the edges of the image
-            w_above = max(-search_range, 1 - y_start);
-            w_below = min(search_range, width - y_end);
-                        
-            reference = right(x_start:x_end, y_start:y_end);
+            w_left = max(-search_range, 1 - x_start);
+            w_right = min(search_range, width - x_end);
+            w_size = w_right - w_left + 1;
             
-            total_blocks = w_below - w_above + 1;
-            similarities = zeros(total_blocks, 1);
+            similarities = zeros(w_size, 1);
             
-            % Calculate the difference between the reference and each of the blocks.
-            for i = w_above : w_below
+            reference = right(y_start:y_end, x_start:x_end);
+            
+            % Calculate the difference between the reference and each of the windows.
+            for i = w_left : w_right
                 % Select the block from the left image at the distance 'i'.
-                window = left(x_start:x_end, (y_start + i):(y_end + i));
+                window = left(y_start:y_end, (x_start + i):(x_end + i));
                 % Compute the similarity for this window,
-                index = i - w_above + 1;
+                index = i - w_left + 1;
                 similarities(index, 1) = SSD(reference, window);
             end
             [~, min_index] = min(similarities);
             
             
             % Change the index back to an offset
-            % disparity = max(0, min_index + w_above - 1);
-            disparity = min_index + w_above - 1;
+            disparity = max(0, min_index + w_left - 1);
+%             disparity = min_index + w_left - 1;
             
-            if (subpixel == 1 && ((min_index ~= 1) && (min_index ~= total_blocks)))
-                above = similarities(min_index - 1);
+            if (subpixel == 1 && ((min_index ~= 1) && (min_index ~= w_size)))
+                before = similarities(min_index - 1);
                 pixel = similarities(min_index);
-                below = similarities(min_index + 1);
-                
-                disparity = disparity - (0.5 * (below - above) / (above - (2*pixel) + below));
+                after = similarities(min_index + 1);
+               
+                % adjust the disparity meausure of a pixel according to that of its neighbours
+                % formula taken from "RB Fisher - Sub-pixel estimation"
+                % disparity = disparity - ((after-before)/(2*pixel))
+                disparity = disparity - (((2*pixel)-after-before)/(2*(after-before)));
             end
-            disparity_map(x,y) = disparity;
+            disparity_map(y,x) = disparity;
         end
     end
     
-    sigmoid = arrayfun(@(x) 1./(1 + exp(-1.*(x))), disparity_map);
+%      n = std(disparity_map(:));
+    
+    sigmoid = arrayfun(@(x) 1./(1 + exp(-2.*(x))), disparity_map);
 end
